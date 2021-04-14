@@ -1,0 +1,12 @@
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description= Modem Power On via GPIO
+
+[Service]
+ExecStart=/usr/sbin/boardctl modem on
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,151 @@
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+steps:
+  - mkimg: "{{ output }}"
+    size: 1500M
+
+  - mklabel: msdos
+    device: "{{ output }}"
+
+  - mkpart: primary
+    device: "{{ output }}"
+    start: 0%
+    end: 100%
+    tag: /
+
+  - kpartx: "{{ output }}"
+
+  - mkfs: ext4
+    partition: /
+    label: OMROOT
+    options: -FO ^64bit,^metadata_csum
+
+  - mount: /
+
+  - unpack-rootfs: /
+
+  - qemu-debootstrap: bullseye
+    mirror: http://deb.debian.org/debian
+    target: /
+    arch: armhf
+    components:
+    - main
+    - contrib
+    - non-free
+    unless: rootfs_unpacked
+
+  - create-file: /etc/apt/sources.list
+    trailing-newline: '1'
+    contents: |
+      deb http://deb.debian.org/debian bullseye main contrib non-free
+      deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free
+      deb http://deb.debian.org/debian bullseye-updates main contrib non-free      
+    unless: rootfs_unpacked
+
+  - fstab: /
+
+  - chroot: /
+    shell: |
+      apt-get update
+    unless: rootfs_unpacked
+
+  - apt: install
+    packages:
+    - ssh
+    - psmisc
+    - parted
+    - dosfstools
+    - network-manager
+    - net-tools
+    - sudo
+    - usbutils
+    - python3-libgpiod
+    - haveged
+    tag: /
+    unless: rootfs_unpacked
+
+  - resize-rootfs: /
+    unless: rootfs_unpacked
+
+  - cache-rootfs: /
+    unless: rootfs_unpacked
+
+  - shell: |
+      echo "smartmini" > "${ROOT?}/etc/hostname"
+      echo "127.0.0.1    smartmini" >> "${ROOT?}/etc/hosts"
+
+      install -m 644 -o root -g root debian-packages/linux-image-*.deb "${ROOT?}/linux-image.deb"
+      install -m 644 -o root -g root rootfs/etc/imageinfo.txt "${ROOT?}/etc/imageinfo.txt"
+      
+      # boardctl and modem startup boot installation 
+      install -m 644 -o root -g root rootfs/etc/systemd/system/modem-power-on.service "${ROOT?}/etc/systemd/system/modem-power-on.service"
+      ln -s /etc/systemd/system/modem-power-on.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/modem-power-on.service"
+      install -D -m 755 -o root -g root rootfs/usr/local/boardctl/__main__.py "${ROOT?}/usr/local/boardctl/__main__.py"
+      ln -s /usr/local/boardctl/__main__.py "${ROOT?}/usr/sbin/boardctl"
+
+      # Host-key reconfiguration setup
+      install -m 644 -o root -g root rootfs/etc/systemd/system/generate-ssh-host-keys.service "${ROOT?}/etc/systemd/system/generate-ssh-host-keys.service"
+      install -m 755 -o root -g root rootfs/usr/sbin/generate-ssh-host-keys.sh "${ROOT?}/usr/sbin/generate-ssh-host-keys.sh"
+      ln -s /etc/systemd/system/generate-ssh-host-keys.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/generate-ssh-host-keys.service"
+      
+      # NetworkManager connections setup
+      install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-eth0.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-eth0.nmconnection"
+      install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-modem.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-modem.nmconnection"
+
+      install -d ${ROOT?}/root/.ssh
+      install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"
+    root-fs: /
+
+  - chroot: /
+    shell: |
+      # delete root password
+      passwd -d root
+
+      useradd --shell /bin/bash --create-home user 
+      echo 'user:user' | chpasswd
+
+      install -d /home/user/.ssh
+      install -m 644 -o user -g user /root/.ssh/authorized_keys /home/user/.ssh/authorized_keys
+
+      # add user to sudoers
+      echo 'user ALL = NOPASSWD: ALL' | EDITOR='tee -a' visudo
+
+      # edit user and root .bashrc to enable ll, la and l aliases
+      sed -i 's/#\(alias l[la=]\)/\1/g' "/home/user/.bashrc"
+      echo "alias l='ls -CF'\nalias la='ls -A'\nalias ll='ls -l'" >> /root/.bashrc 
+
+      yes | apt full-upgrade
+
+      dpkg --install /linux-image.deb
+      rm /linux-image.deb
+      
+      ln -s /boot/vmlinuz-* /boot/zImage
+       
+      cp /usr/lib/linux-image*/imx6dl-tx6s-8035-smartmini-v2p1.dtb /boot/tx6s-8035-smartmini-v2p1.dtb      
+      cp /usr/lib/linux-image*/imx6dl-tx6s-8035-smartmini-v2p2.dtb /boot/tx6s-8035-smartmini-v2p2.dtb
+      cp /usr/lib/linux-image*/imx6dl-tx6s-8035-smartmini-v2p3.dtb /boot/tx6s-8035-smartmini-v2p3.dtb
+      cp /usr/lib/linux-image*/imx6q-tx6qp-8037-smartmini-v2p1.dtb /boot/tx6qp-8037-smartmini-v2p1.dtb
+      cp /usr/lib/linux-image*/imx6q-tx6qp-8037-smartmini-v2p3.dtb /boot/tx6qp-8037-smartmini-v2p3.dtb
+      cp /usr/lib/linux-image*/imx6dl-tx6s-8035-smartpro-v1p2.dtb  /boot/tx6s-8035-smartpro-v1p2.dtb
+      cp /usr/lib/linux-image*/imx6dl-tx6s-8035-smartrail-v1p0.dtb /boot/tx6s-8035-smartrail-v1p0.dtb
+      cp /usr/lib/linux-image*/imx6q-tx6qp-8037-smartrail-v1p0.dtb /boot/tx6qp-8037-smartrail-v1p0.dtb
+      cp /usr/lib/linux-image*/imx6dl-tx6u-8033-bekolog-v1p0.dtb   /boot/tx6u-8033-bekolog-v1p0.dtb
+
+      # reconfigure iputils-ping to read in kernel modules and setup userspace linux capabilites support
+      apt install --reinstall iputils-ping
+
+  # Clean up archive cache (likely not useful) and lists (likely outdated) to
+  # reduce image size by several hundred megabytes.
+  - chroot: /
+    shell: |
+      apt-get clean
+      rm -rf /var/lib/apt/lists
+
+  # TODO(https://github.com/larswirzenius/vmdb2/issues/24): remove once vmdb
+  # clears /etc/resolv.conf on its own.
+  - shell: |
+      rm "${ROOT?}/etc/resolv.conf"
+    root-fs: /
+

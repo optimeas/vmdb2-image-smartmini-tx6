@@ -1,0 +1,14 @@
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description= SSH-Host Key Generation
+Before=ssh.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/generate-ssh-host-keys.sh
+
+[Install]
+WantedBy=multi-user.target

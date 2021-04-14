@@ -1,0 +1,25 @@
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+[connection]
+id=con-eth0
+uuid=cd49f793-b3c4-3fb2-ba91-29eab4e252e5
+type=ethernet
+autoconnect-priority=-999
+interface-name=eth0
+permissions=
+
+[ethernet]
+mac-address-blacklist=
+
+[ipv4]
+dns-search=
+method=auto
+
+[ipv6]
+addr-gen-mode=stable-privacy
+dns-search=
+method=auto
+
+[proxy]

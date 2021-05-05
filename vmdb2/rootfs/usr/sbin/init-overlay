@@ -1,0 +1,58 @@
+#!/bin/sh
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+
+set -eu
+
+findRoot () {
+    # check boot cmd line for "root="
+    local cmdline=`cat /proc/cmdline`
+    rootDev=$(echo $cmdline | sed -rn 's_.*root=([^[:space:]]*).*_\1_p')      
+    echo "$rootDev"
+}  
+
+echo "- Init for Overlayfs with readonly rootfs -"
+
+mount -t proc proc /proc
+
+mount -t tmpfs tmpfs /mnt
+
+ROOT_DEVICE=$(findRoot)
+NEWROOT=/mnt/newroot
+
+#setup overlayfs directories
+mkdir /mnt/ro /mnt/rw
+
+mount -t tmpfs rw-root /mnt/rw
+mkdir /mnt/rw/upperdir /mnt/rw/work
+
+mkdir $NEWROOT
+
+# mount root ro
+mount -t ext4 -o defaults,errors=remount-ro $ROOT_DEVICE /mnt/ro
+
+# overlay mount
+mount -t overlay -o lowerdir=/mnt/ro,upperdir=/mnt/rw/upperdir,workdir=/mnt/rw/work overlayfs-root $NEWROOT
+
+mkdir -p $NEWROOT/media/rfs/ro $NEWROOT/media/rfs/rw
+
+# overlay setup is finished, switching to new root 
+cd $NEWROOT
+pivot_root . mnt
+
+exec chroot . sh -c "$(cat << EOF
+# move ro and rw mounts into new root
+mount --move /mnt/mnt/ro /media/rfs/ro
+mount --move /mnt/mnt/rw /media/rfs/rw
+
+# unmount old rootfs 
+umount /mnt/mnt
+umount /mnt/proc
+umount /mnt/dev
+umount /mnt
+
+exec /sbin/init
+EOF
+)"

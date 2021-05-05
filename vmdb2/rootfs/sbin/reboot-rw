@@ -1,0 +1,24 @@
+#!/bin/bash
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+# Check if rootfs is mounted rw on /
+if ! mount | grep overlay > /dev/null; then
+    echo "Rootfs already mounted ReadWrite on '/'. Nothing to do"
+    exit 0
+fi
+
+# Delete /readonly flagfile and reboot
+RO_ROOT_PATH="/media/rfs/ro"
+FLAG_PATH="$RO_ROOT_PATH/readonly"
+
+mount -o remount,rw $RO_ROOT_PATH
+if [ $? -ne 0 ]; then
+    echo "Couldn't remount ro-rootfs rw. Aborting. "
+    exit 1
+fi
+
+rm -f $FLAG_PATH
+
+reboot $@

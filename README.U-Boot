@@ -1,9 +1,5 @@
 Starting with a U-Boot from our Yocto image (in the eMMC), the following variables need to be adjusted:
 
-setenv bootargs_debian 'setenv bootargs console=ttymxc0,115200 panic=1 hwid=${hwid} root=/dev/mmcblk0p1'
-setenv bootcmd_emmc_A 'ext4load mmc 1:1 ${loadaddr} /boot/zImage; ext4load mmc 1:1 ${fdtaddr} /boot/${hwid}.dtb; run bootargs_debian;'
-setenv bootcmd_emmc_B 'ext4load mmc 1:1 ${loadaddr} /boot/zImage; ext4load mmc 1:1 ${fdtaddr} /boot/${hwid}.dtb; run bootargs_debian;'
-setenv bootm_cmd 'bootz ${loadaddr} - ${fdtaddr}'
-setenv boot_mode 'emmc_B'
+setenv bootcmd 'ext4load mmc 1:1 30000000 /boot/u-boot.scr; source 30000000'
 save
 

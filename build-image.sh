@@ -72,6 +72,16 @@ MACHINE=${MACHINE}
 VERSION=${IMAGE_VERSION}
 " > ${ROOTFS}/etc/imageinfo.txt
 
+# u-boot script creation
+UBOOT_SCRIPT=${MYDIR}/scripts/u-boot.script
+SCRIPT_DEST_DIR=${MYDIR}/vmdb2/rootfs/boot
+
+
+sudo mkimage -A arm -T "script" -C none -n "Boot Script" -d "${UBOOT_SCRIPT}" u-boot.scr
+mkdir -p ${SCRIPT_DEST_DIR}
+rm -f ${SCRIPT_DEST_DIR}/u-boot.scr
+mv u-boot.scr ${SCRIPT_DEST_DIR}
+
 
 sudo rm -f ${VMDB2_IMAGE_FILE} ${VMDB2_COMPRESSED_IMAGE_FILE}
 time sudo ${VMDB2_LATEST_DIR}/vmdb2 --verbose --rootfs-tarball=${VMDB2_ROOTFS_CACHE_FILE} --output ${VMDB2_IMAGE_FILE} ${VMDB2_YAML_FILE} --log ${VMDB2_LOG_FILE}

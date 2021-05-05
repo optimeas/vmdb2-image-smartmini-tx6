@@ -94,6 +94,14 @@ steps:
       install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-eth0.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-eth0.nmconnection"
       install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-modem.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-modem.nmconnection"
 
+      # Overlay init setup
+      install -m 755 -o root -g root rootfs/usr/sbin/init-overlay "${ROOT?}/usr/sbin/init-overlay"
+      install -m 755 -o root -g root rootfs/sbin/reboot-rw "${ROOT?}/sbin/reboot-rw"
+      install -m 755 -o root -g root rootfs/sbin/reboot-ro "${ROOT?}/sbin/reboot-ro"
+
+      # U-Boot
+      install -m 644 -o root -g root rootfs/boot/u-boot.scr "${ROOT?}/boot/u-boot.scr"
+      
       install -d ${ROOT?}/root/.ssh
       install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"
     root-fs: /

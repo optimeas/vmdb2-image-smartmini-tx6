@@ -1,0 +1,16 @@
+test -n "$loadaddr" || setenv loadaddr 18000000
+test -n "$fdtaddr" || setenv fdtaddr 11900000
+test -n "${fsck_mode}" || setenv fsck_mode 'force'
+
+if ext4load mmc 1:1 0 readonly; then
+    test -n "$init" || setenv init '/usr/sbin/init-overlay'
+else
+    test -n "$init" || setenv init '/sbin/init'
+fi
+
+setenv bootargs "console=ttymxc0,115200 panic=1 hwid=${hwid} root=/dev/mmcblk0p1 fsck.mode=${fsck_mode} init=${init}"
+
+echo "Bootargs: $bootargs"
+ext4load mmc 1:1 ${loadaddr} /boot/zImage
+ext4load mmc 1:1 ${fdtaddr} /boot/${hwid}.dtb 
+bootz ${loadaddr} - ${fdtaddr}

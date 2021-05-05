@@ -1,0 +1,19 @@
+#!/bin/bash
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+# Check if system has a overlayfs setup
+if mount | grep overlay > /dev/null; then
+    echo "System already setup with readonly-overlayfs. Nothing to do"
+    exit 0
+fi
+
+# Create flagfile and reboot
+touch /readonly
+if [ $? -ne 0 ]; then
+    echo "Couldn't create /readonly flagfile. Aborting."
+    exit 1
+fi
+
+reboot $@

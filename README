@@ -3,7 +3,7 @@ Instructions for configuration and use of hardware and software components can b
 
 ### Required packages for building the image (incl. the kernel)
 
-    sudo apt install bison flex bc lzop gcc-arm-linux-gnueabihf vmdb2 dosfstools qemu-user-static binfmt-support time kpartx bmap-tools
+    sudo apt install bison flex bc lzop gcc-arm-linux-gnueabihf vmdb2 dosfstools qemu-user-static binfmt-support time kpartx bmap-tools u-boot-tools rauc squashfs-tools
 
 ### Flashing the image to the SD-card
 

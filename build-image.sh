@@ -76,7 +76,6 @@ VERSION=${IMAGE_VERSION}
 UBOOT_SCRIPT=${MYDIR}/scripts/u-boot.script
 SCRIPT_DEST_DIR=${MYDIR}/vmdb2/rootfs/boot
 
-
 sudo mkimage -A arm -T "script" -C none -n "Boot Script" -d "${UBOOT_SCRIPT}" u-boot.scr
 mkdir -p ${SCRIPT_DEST_DIR}
 rm -f ${SCRIPT_DEST_DIR}/u-boot.scr
@@ -85,6 +84,16 @@ mv u-boot.scr ${SCRIPT_DEST_DIR}
 
 sudo rm -f ${VMDB2_IMAGE_FILE} ${VMDB2_COMPRESSED_IMAGE_FILE}
 time sudo ${VMDB2_LATEST_DIR}/vmdb2 --verbose --rootfs-tarball=${VMDB2_ROOTFS_CACHE_FILE} --output ${VMDB2_IMAGE_FILE} ${VMDB2_YAML_FILE} --log ${VMDB2_LOG_FILE}
+
+# create RAUC bundle
+BUNDLE_FILE="${MYDIR}/output/rootfs-${IMAGE_VERSION}.raucb"
+DEVICE=$(${MYDIR}/mount-image.sh ${VMDB2_IMAGE_FILE} | head -n 1)
+
+rm -rf ${BUNDLE_FILE}
+sed "s/.*version.*/version=${IMAGE_VERSION}\n/g" ${MYDIR}/vmdb2/rauc/manifest.raucm.template > ${MYDIR}/vmdb2/rauc/manifest.raucm # set raucb version as the same as the version inside of /etc/imageinfo.txt
+sudo dd if=${DEVICE}p2 of=${MYDIR}/vmdb2/rauc/rootfs.ext4 
+cd ${MYDIR}/vmdb2/rauc
+rauc bundle --cert ../rootfs/etc/rauc/ca.cert.pem --key ca.key.pem . ${BUNDLE_FILE}
 
 if [ $OPT_CREATE_COMPRESSED_IMAGE = 1 ]  ; then
     xz -k ${VMDB2_IMAGE_FILE}

@@ -1,16 +1,61 @@
-test -n "$loadaddr" || setenv loadaddr 18000000
-test -n "$fdtaddr" || setenv fdtaddr 11900000
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# UBoot RAUC-Bootselection for MMC
+
+test -n "${BOOT_ORDER}" || setenv BOOT_ORDER "A B"
+test -n "${BOOT_A_LEFT}" || setenv BOOT_A_LEFT 3
+test -n "${BOOT_B_LEFT}" || setenv BOOT_B_LEFT 3
+test -n "$loadaddr" || setenv loadaddr 0x18000000
+test -n "$fdtaddr" || setenv fdtaddr 0x11900000
 test -n "${fsck_mode}" || setenv fsck_mode 'force'
 
-if ext4load mmc 1:1 0 readonly; then
+echo "##################################"
+echo "## RAUC Boot Selector"
+echo "##################################"
+
+setenv bootargs
+
+for BOOT_SLOT in "${BOOT_ORDER}"; do
+  if test "x${bootargs}" != "x"; then
+    # skip remaining slots
+  elif test "x${BOOT_SLOT}" = "xA"; then
+    if test ${BOOT_A_LEFT} -gt 0; then
+      setexpr BOOT_A_LEFT ${BOOT_A_LEFT} - 1
+      echo "Found valid slot A, ${BOOT_A_LEFT} attempts remaining"
+      setenv rootpart 2
+      setenv raucslot A
+    fi
+  elif test "x${BOOT_SLOT}" = "xB"; then
+    if test ${BOOT_B_LEFT} -gt 0; then
+      setexpr BOOT_B_LEFT ${BOOT_B_LEFT} - 1
+      echo "Found valid slot B, ${BOOT_B_LEFT} attempts remaining"
+      setenv rootpart 3
+      setenv raucslot B
+    fi
+  fi
+done
+
+if test -n "${bootargs}"; then
+  saveenv
+else
+  echo "No valid slot found, resetting tries to 3"
+  setenv BOOT_A_LEFT 3
+  setenv BOOT_B_LEFT 3
+  saveenv
+  reset
+fi
+
+if ext4load mmc 1:${rootpart} 0 readonly; then
     test -n "$init" || setenv init '/usr/sbin/init-overlay'
 else
     test -n "$init" || setenv init '/sbin/init'
 fi
 
-setenv bootargs "console=ttymxc0,115200 panic=1 hwid=${hwid} root=/dev/mmcblk0p1 fsck.mode=${fsck_mode} init=${init}"
+run default_bootargs;setenv bootargs ${bootargs} console=ttymxc0,115200 root=/dev/mmcblk0p${rootpart} rauc.slot=${raucslot} rootwait
 
-echo "Bootargs: $bootargs"
-ext4load mmc 1:1 ${loadaddr} /boot/zImage
-ext4load mmc 1:1 ${fdtaddr} /boot/${hwid}.dtb 
+echo "Bootargs: ${bootargs}"
+ext4load mmc 1:${rootpart} ${loadaddr} /boot/zImage
+ext4load mmc 1:${rootpart} ${fdtaddr} /boot/${hwid}.dtb
 bootz ${loadaddr} - ${fdtaddr}

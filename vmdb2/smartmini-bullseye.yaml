@@ -4,7 +4,7 @@
 
 steps:
   - mkimg: "{{ output }}"
-    size: 1500M
+    size: 2010M
 
   - mklabel: msdos
     device: "{{ output }}"
@@ -12,23 +12,44 @@ steps:
   - mkpart: primary
     device: "{{ output }}"
     start: 0%
+    end: 10M
+    tag: uboot
+
+  - mkpart: primary
+    device: "{{ output }}"
+    start: 11M
+    end: 1010M
+    tag: rootA  
+
+  - mkpart: primary
+    device: "{{ output }}"
+    start: 1011M
     end: 100%
-    tag: /
+    tag: rootB
 
   - kpartx: "{{ output }}"
 
+  - mkfs: vfat
+    partition: uboot
+    label: UBOOT
+
   - mkfs: ext4
-    partition: /
-    label: OMROOT
+    partition: rootA
+    label: OMROOTA
     options: -FO ^64bit,^metadata_csum
 
-  - mount: /
+  - mkfs: ext4
+    partition: rootB
+    label: OMROOTB
+    options: -FO ^64bit,^metadata_csum
 
-  - unpack-rootfs: /
+  - mount: rootA
+
+  - unpack-rootfs: rootA
 
   - qemu-debootstrap: bullseye
     mirror: http://deb.debian.org/debian
-    target: /
+    target: rootA
     arch: armhf
     components:
     - main
@@ -36,19 +57,20 @@ steps:
     - non-free
     unless: rootfs_unpacked
 
-  - create-file: /etc/apt/sources.list
+  - create-file: /etc/apt/sources.list.d/testing.list
     trailing-newline: '1'
     contents: |
       deb http://deb.debian.org/debian bullseye main contrib non-free
       deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free
-      deb http://deb.debian.org/debian bullseye-updates main contrib non-free      
+      deb http://deb.debian.org/debian bullseye-updates main contrib non-free
     unless: rootfs_unpacked
 
-  - fstab: /
+  - fstab: rootA
 
-  - chroot: /
+  - chroot: rootA
     shell: |
-      apt-get update
+      mv /etc/apt/sources.list /etc/apt/sources.list.orig
+      apt update
     unless: rootfs_unpacked
 
   - apt: install
@@ -63,13 +85,15 @@ steps:
     - usbutils
     - python3-libgpiod
     - haveged
-    tag: /
+    - rsync
+    - rauc
+    - rauc-service
+    - squashfs-tools
+    - libubootenv-tool
+    tag: rootA
     unless: rootfs_unpacked
 
-  - resize-rootfs: /
-    unless: rootfs_unpacked
-
-  - cache-rootfs: /
+  - cache-rootfs: rootA
     unless: rootfs_unpacked
 
   - shell: |
@@ -98,15 +122,22 @@ steps:
       install -m 755 -o root -g root rootfs/usr/sbin/init-overlay "${ROOT?}/usr/sbin/init-overlay"
       install -m 755 -o root -g root rootfs/sbin/reboot-rw "${ROOT?}/sbin/reboot-rw"
       install -m 755 -o root -g root rootfs/sbin/reboot-ro "${ROOT?}/sbin/reboot-ro"
-
-      # U-Boot
-      install -m 644 -o root -g root rootfs/boot/u-boot.scr "${ROOT?}/boot/u-boot.scr"
       
+      # fw_printenv setup
+      install -m 600 -o root -g root rootfs/etc/fw_env.config "${ROOT?}/etc/fw_env.config"
+
+      # rauc setup
+      install -D -m 600 -o root -g root rootfs/etc/rauc/system.conf "${ROOT?}/etc/rauc/system.conf"
+      install -m 600 -o root -g root rootfs/etc/rauc/ca.cert.pem "${ROOT?}/etc/rauc/ca.cert.pem"
+
+      install -m 644 -o root -g root rootfs/etc/systemd/system/rauc-mark-good.service "${ROOT?}/etc/systemd/system/rauc-mark-good.service"
+      ln -s /etc/systemd/system/rauc-mark-good.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/rauc-mark-good.service"
+
       install -d ${ROOT?}/root/.ssh
       install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"
-    root-fs: /
+    root-fs: rootA
 
-  - chroot: /
+  - chroot: rootA
     shell: |
       # delete root password
       passwd -d root
@@ -141,9 +172,13 @@ steps:
       cp /usr/lib/linux-image*/imx6q-tx6qp-8037-smartrail-v1p0.dtb /boot/tx6qp-8037-smartrail-v1p0.dtb
       cp /usr/lib/linux-image*/imx6dl-tx6u-8033-bekolog-v1p0.dtb   /boot/tx6u-8033-bekolog-v1p0.dtb
 
+      # reconfigure iputils-ping to read in kernel modules and setup userspace linux capabilites support
+      apt install --reinstall iputils-ping
+
+
   # Clean up archive cache (likely not useful) and lists (likely outdated) to
   # reduce image size by several hundred megabytes.
-  - chroot: /
+  - chroot: rootA
     shell: |
       apt-get clean
       rm -rf /var/lib/apt/lists
@@ -152,5 +187,29 @@ steps:
   # clears /etc/resolv.conf on its own.
   - shell: |
       rm "${ROOT?}/etc/resolv.conf"
-    root-fs: /
+    root-fs: rootA
 
+  # Copy rootfs in OMROOTA into OMROOTB
+
+  - mount: rootB
+    mount-on: rootA
+    dirname: /mnt
+
+  - chroot: rootA
+    shell: |
+      rsync -avxHAXp / /mnt
+
+  - fstab: rootB
+
+  # mount the UBoot vfat partition to copy the boot-selection script onto the vfat partition
+  - chroot: rootA
+    shell: |
+      umount /mnt
+
+  - mount: uboot
+    mount-on: rootA
+    dirname: /mnt
+
+  - shell: |
+      install -m 744 -o root -g root rootfs/boot/u-boot.scr "${ROOT?}/mnt/u-boot.scr"
+    root-fs: rootA

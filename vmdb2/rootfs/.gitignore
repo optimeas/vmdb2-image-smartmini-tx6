@@ -1,2 +1,3 @@
 etc/imageinfo.txt
 boot/
+usr/local/bin/fw_printenv

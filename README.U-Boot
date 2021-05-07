@@ -1,5 +1,7 @@
-Starting with a U-Boot from our Yocto image (in the eMMC), the following variables need to be adjusted:
+Starting with a U-Boot from our Yocto image (in the eMMC), the following variables need to be adjusted to mannually to use
+the RAUC-Boot-Selection script:
 
-setenv bootcmd 'ext4load mmc 1:1 30000000 /boot/u-boot.scr; source 30000000'
-saveenv
+setenv default_bootargs 
+setenv bootcmd 'fatload mmc 1:1 30000000 u-boot.scr; source 30000000;'
+save
 

@@ -1,0 +1,15 @@
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description=Rauc Good-marking Service
+After=boot-complete.target
+Requires=boot-complete.target
+
+[Service]
+Type=oneshot
+ExecStart=sh -ce "echo 0 > /sys/block/mmcblk2boot0/force_ro && rauc status mark-good"
+
+[Install]
+WantedBy=multi-user.target

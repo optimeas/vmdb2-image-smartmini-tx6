@@ -4,7 +4,7 @@
 
 steps:
   - mkimg: "{{ output }}"
-    size: 1500M
+    size: 1000M
 
   - mklabel: msdos
     device: "{{ output }}"
@@ -44,8 +44,6 @@ steps:
       deb http://deb.debian.org/debian bullseye-updates main contrib non-free      
     unless: rootfs_unpacked
 
-  - fstab: /
-
   - chroot: /
     shell: |
       apt-get update
@@ -64,9 +62,6 @@ steps:
     - python3-libgpiod
     - haveged
     tag: /
-    unless: rootfs_unpacked
-
-  - resize-rootfs: /
     unless: rootfs_unpacked
 
   - cache-rootfs: /
@@ -102,6 +97,8 @@ steps:
       # U-Boot
       install -m 644 -o root -g root rootfs/boot/u-boot.scr "${ROOT?}/boot/u-boot.scr"
       
+      install -m 644 -o root -g root rootfs/etc/fstab "${ROOT?}/etc/fstab"
+
       install -d ${ROOT?}/root/.ssh
       install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"
     root-fs: /
@@ -141,6 +138,14 @@ steps:
       cp /usr/lib/linux-image*/imx6q-tx6qp-8037-smartrail-v1p0.dtb /boot/tx6qp-8037-smartrail-v1p0.dtb
       cp /usr/lib/linux-image*/imx6dl-tx6u-8033-bekolog-v1p0.dtb   /boot/tx6u-8033-bekolog-v1p0.dtb
 
+      # SD Data mount point
+      mkdir /sde
+      chown user:user /sde
+      
+
+      # reconfigure iputils-ping to read in kernel modules and setup userspace linux capabilites support
+      apt install --reinstall iputils-ping
+
   # Clean up archive cache (likely not useful) and lists (likely outdated) to
   # reduce image size by several hundred megabytes.
   - chroot: /
@@ -153,4 +158,11 @@ steps:
   - shell: |
       rm "${ROOT?}/etc/resolv.conf"
     root-fs: /
+
+  # commpress completed target image for the installer image
+  - shell: |
+      rm -f installer/rootfs.tar.gz
+      tar -C ${ROOT?} --one-file-system -cazf installer/rootfs.tar.gz .
+    root-fs: /
+
 

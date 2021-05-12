@@ -29,6 +29,12 @@ VMDB2_ROOTFS_CACHE_FILE="${OUTPUT_PATH}/${VMDB2_YAML_FILE_WITHOUT_EXTENSION}-roo
 VMDB2_IMAGE_FILE="${OUTPUT_PATH}/${VMDB2_YAML_FILE_WITHOUT_EXTENSION}.img"
 VMDB2_COMPRESSED_IMAGE_FILE="${VMDB2_IMAGE_FILE}.xz"
 
+INSTALLER_NAME=installer-image
+INSTALLER_IMAGE="${OUTPUT_PATH}/${INSTALLER_NAME}.img"
+INSTALLER_ROOTFS_CACHE="${OUTPUT_PATH}/${INSTALLER_NAME}-rootfs-cache.tar.gz"
+INSTALLER_YAML="${MYDIR}/${VMDB2_DIR}/${INSTALLER_NAME}.yaml"
+INSTALLER_LOG="${OUTPUT_PATH}/${INSTALLER_NAME}-$(date +"%Y_%m_%d__%H_%M_%S").log"
+
 ROOTFS="${MYDIR}/${VMDB2_DIR}/rootfs"
 
 if [ ! -d "$OUTPUT_PATH" ]; then
@@ -54,6 +60,7 @@ fi
 
 if [ $OPT_INCREMENTAL_BUILD = 0 ]; then
     [ -f ${VMDB2_ROOTFS_CACHE_FILE} ] && sudo rm -f ${VMDB2_ROOTFS_CACHE_FILE}
+    [ -f ${INSTALLER_ROOTFS_CACHE} ] && sudo rm -f ${INSTALLER_ROOTFS_CACHE}
 fi
 
 # generate imageinfo.txt for this build
@@ -73,20 +80,33 @@ VERSION=${IMAGE_VERSION}
 " > ${ROOTFS}/etc/imageinfo.txt
 
 # u-boot script creation
-UBOOT_SCRIPT=${MYDIR}/scripts/u-boot.script
-SCRIPT_DEST_DIR=${MYDIR}/vmdb2/rootfs/boot
+UBOOT_SCRIPT_MMC=${MYDIR}/scripts/u-boot-mmc.script
+MMC_SCRIPT_DIR=${MYDIR}/vmdb2/rootfs/boot
+UBOOT_SCRIPT_INST=${MYDIR}/scripts/u-boot-installer.script
+INST_SCRIPT_DIR=${MYDIR}/vmdb2/installer/
 
+# prepare target MMC u-boot script
+sudo mkimage -A arm -T "script" -C none -n "Boot Script" -d "${UBOOT_SCRIPT_MMC}" u-boot.scr
+mkdir -p ${MMC_SCRIPT_DIR}
+rm -f ${MMC_SCRIPT_DIR}/u-boot.scr
+mv u-boot.scr ${MMC_SCRIPT_DIR}
 
-sudo mkimage -A arm -T "script" -C none -n "Boot Script" -d "${UBOOT_SCRIPT}" u-boot.scr
-mkdir -p ${SCRIPT_DEST_DIR}
-rm -f ${SCRIPT_DEST_DIR}/u-boot.scr
-mv u-boot.scr ${SCRIPT_DEST_DIR}
+# prepare installer u-boot script 
+sudo mkimage -A arm -T "script" -C none -n "Boot Script" -d "${UBOOT_SCRIPT_INST}" u-boot.scr
+mkdir -p ${INST_SCRIPT_DIR}
+rm -f ${INST_SCRIPT_DIR}/u-boot.scr
+mv u-boot.scr ${INST_SCRIPT_DIR}
 
-
+# Build the Target Image
 sudo rm -f ${VMDB2_IMAGE_FILE} ${VMDB2_COMPRESSED_IMAGE_FILE}
 time sudo ${VMDB2_LATEST_DIR}/vmdb2 --verbose --rootfs-tarball=${VMDB2_ROOTFS_CACHE_FILE} --output ${VMDB2_IMAGE_FILE} ${VMDB2_YAML_FILE} --log ${VMDB2_LOG_FILE}
 
+# Build installer image
+sudo rm -f ${INSTALLER_IMAGE} 
+time sudo ${VMDB2_LATEST_DIR}/vmdb2 --verbose --rootfs-tarball=${INSTALLER_ROOTFS_CACHE} --output ${INSTALLER_IMAGE} ${INSTALLER_YAML} --log ${INSTALLER_LOG}
+
 if [ $OPT_CREATE_COMPRESSED_IMAGE = 1 ]  ; then
     xz -k ${VMDB2_IMAGE_FILE}
+    xz -k ${INSTALLER_IMAGE}
 fi
 

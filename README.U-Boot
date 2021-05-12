@@ -1,5 +1,5 @@
 Starting with a U-Boot from our Yocto image (in the eMMC), the following variables need to be adjusted:
 
-setenv bootcmd 'ext4load mmc 1:1 30000000 /boot/u-boot.scr; source 30000000'
-saveenv
-
+setenv scraddr 30000000
+setenv bootcmd "ext4load mmc 1:1 "$scraddr" /boot/u-boot.scr || ext4load mmc 0:1 $scraddr /boot/u-boot.scr; source $scraddr"
+save

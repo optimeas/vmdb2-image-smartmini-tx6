@@ -1,0 +1,2 @@
+LABEL=OMROOT / ext4 defaults 0 0
+LABEL=OMDATA /sde ext4 defaults 0 0

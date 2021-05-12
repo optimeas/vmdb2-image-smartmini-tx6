@@ -1,0 +1,81 @@
+#!/bin/sh
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+set -u
+
+log ()
+{   
+    echo "init-install: "$1""
+}
+
+err ()
+{
+    log $1
+    exit 1
+}
+
+cat << EOF
+**************************************
+eMMC Installer 
+*************************************
+EOF
+
+# First setup installer rootfs
+mount -t proc proc /proc
+mount -t sysfs none /sys
+
+EMMC_DEV="/dev/mmcblk2"
+ROOTFS="/rootfs.tar.gz"
+MMC_DEV="/dev/mmcblk0"
+
+/sbin/parted -s ${EMMC_DEV} mklabel msdos
+if [ $? -ne 0 ]; then
+    err "parted failed"
+fi
+
+/sbin/parted -a opt -s ${EMMC_DEV} mkpart primary ext4 0% 100%
+if [ $? -ne 0 ]; then
+    err "parted failed"
+fi
+
+mkfs.ext4 -L OMROOT -FO ^64bit,^metadata_csum ${EMMC_DEV}p1
+
+mount -t ext4 -o rw ${EMMC_DEV}p1 /mnt
+if [ $? -ne 0 ]; then
+    err "mounting eMMC root part failed"
+fi
+
+tar -C /mnt -xf ${ROOTFS} --numeric-owner
+
+log "target image successfully installed on eMMC"
+
+cd /mnt
+pivot_root . mnt
+
+exec chroot . sh -c "$(cat << EOF
+
+# unmount old rootfs 
+umount /mnt/proc
+umount /mnt/sys
+umount /mnt/dev
+umount /mnt
+
+mount -t proc proc /proc
+mount -t sysfs none /sys
+mount -t devtmpfs devtmpfs /dev
+
+/sbin/parted -s ${MMC_DEV} mklabel msdos
+/sbin/parted -a opt -s ${MMC_DEV} mkpart primary ext4 0% 100%
+
+mkfs.ext4 -L OMDATA -FO ^64bit,^metadata_csum ${MMC_DEV}p1
+
+umount /sys
+umount /proc
+
+echo "init-install: eMMC Installer done"
+
+exec /sbin/init
+EOF
+)"

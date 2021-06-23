@@ -141,9 +141,6 @@ steps:
       cp /usr/lib/linux-image*/imx6q-tx6qp-8037-smartrail-v1p0.dtb /boot/tx6qp-8037-smartrail-v1p0.dtb
       cp /usr/lib/linux-image*/imx6dl-tx6u-8033-bekolog-v1p0.dtb   /boot/tx6u-8033-bekolog-v1p0.dtb
 
-      # reconfigure iputils-ping to read in kernel modules and setup userspace linux capabilites support
-      apt install --reinstall iputils-ping
-
   # Clean up archive cache (likely not useful) and lists (likely outdated) to
   # reduce image size by several hundred megabytes.
   - chroot: /

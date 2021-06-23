@@ -16,7 +16,8 @@ set -ex
 
 if [ ! -d "$KERNEL_DIR" ]; then
 	echo "prepare kernel directory"
-    git clone https://github.com/optimeas/linux-tx6-4.14.git ${KERNEL_DIR}
+    git clone https://github.com/optimeas/linux-tx6-5.10.git ${KERNEL_DIR}
+#    git clone git@github.com:optimeas/linux-tx6-5.10.git ${KERNEL_DIR}
 
     mkdir -p ${KERNEL_DIR}/imx/sdma
     cp -v sdma-imx6q.bin ${KERNEL_DIR}/imx/sdma/

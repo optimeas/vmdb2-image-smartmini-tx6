@@ -44,8 +44,6 @@ steps:
       deb http://deb.debian.org/debian bullseye-updates main contrib non-free      
     unless: rootfs_unpacked
 
-  - fstab: /
-
   - chroot: /
     shell: |
       apt-get update
@@ -78,7 +76,8 @@ steps:
 
       install -m 644 -o root -g root debian-packages/linux-image-*.deb "${ROOT?}/linux-image.deb"
       install -m 644 -o root -g root rootfs/etc/imageinfo.txt "${ROOT?}/etc/imageinfo.txt"
-      
+      install -m 644 -o root -g root rootfs/etc/fstab "${ROOT?}/etc/fstab"
+
       # boardctl and modem startup boot installation 
       install -m 644 -o root -g root rootfs/etc/systemd/system/modem-power-on.service "${ROOT?}/etc/systemd/system/modem-power-on.service"
       ln -s /etc/systemd/system/modem-power-on.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/modem-power-on.service"
@@ -152,5 +151,10 @@ steps:
   # clears /etc/resolv.conf on its own.
   - shell: |
       rm "${ROOT?}/etc/resolv.conf"
+    root-fs: /
+
+  - shell: |
+      rm -f $rootfs.tar
+      tar -C ${ROOT?} --one-file-system -caf rootfs.tar .
     root-fs: /
 

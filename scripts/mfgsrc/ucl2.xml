@@ -1,0 +1,224 @@
+<!--
+* Copyright (C) 2012, Freescale Semiconductor, Inc. All Rights Reserved.
+* The CFG element contains a list of recognized usb devices.
+*  DEV elements provide a name, class, vid and pid for each device.
+*
+* Each LIST element contains a list of update instructions.
+*  "Install" - Erase media and install firmware.
+*  "Update" - Update firmware only.
+*
+* Each CMD element contains one update instruction of attribute type.
+*  "pull" - Does UtpRead(body, file) transaction.
+*  "push" - Does UtpWrite(body, file) transaction.
+*  "drop" - Does UtpCommand(body) then waits for device to disconnect.
+*  "boot" - Finds configured device, forces it to "body" device and downloads "file".
+*  "find" - Waits for "timeout" seconds for the "body" device to connect.
+*  "show" - Parse and show device info in "file".  
+*
+* Ka-Ro electronics GmbH additional infos 
+* 
+* The following steps are used to program NAND and configure U-Boot  
+*
+* 1. Load U-Boot_mfg binary, the memory controller is initialised 
+* 2. Upload and store several files at these memory locations:
+*   _ADDR_MFGENV   U-Boot mfg environment (bootcmd_mfg) used for programming
+*   _ADDR_UBOOT    U-Boot binary used for romupdate
+*   _ADDR_UBOOTENV U-Boot environment settings
+*   _ADDR_MFGDTB   mfg dtb
+*   _ADDR_DTB      dtb
+*   _ADDR_MFGKRNL  Linux_mfg kernel
+*   _ADDR_RAMFS    initramfs
+* 3. Boot
+*
+* U-Boot_mfg will automatically import and execute the bootcmd_mfg commands 
+* All the other steps, like updating U-Boot in NAND or importing the target  
+* environment are defined by the bootcmd_mfg command sequence. 
+* 
+* Afterwards Linux_mfg ist started as usual which may be used to store data 
+* on a SD-Card as usual.
+*
+-->
+
+<UCL>
+  <CFG>
+    <STATE name="BootStrap" dev="MX6D" vid="15A2" pid="0061"/>
+    <STATE name="BootStrap" dev="MX6Q" vid="15A2" pid="0054"/>
+    <STATE name="BootStrap" dev="MX6UL" vid="15A2" pid="007D"/> 
+    <STATE name="Updater"   dev="MSC" vid="066F" pid="37FF"/> 
+  </CFG> 
+
+  <LIST name="LINUX-NAND">
+
+    <CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+
+    <!--U-Boot update and environment setup: -->
+    <CMD state="BootStrap" type="boot" body="Recovery" file="%_MFGUBOOT%" >Loading mfg U-Boot.</CMD>
+
+    <CMD state="BootStrap" type="load" file="%_MFGENV%"  address="%_ADDR_MFGENV%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg U-Boot parameters.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGKRNL%" address="%_ADDR_MFGKRNL%" loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg Linux kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGDTB%"  address="%_ADDR_MFGDTB%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg dtb.</CMD>
+    <CMD state="BootStrap" type="load" file="%_RAMFS%"   address="%_ADDR_RAMFS%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading initramfs.</CMD>
+    <CMD state="BootStrap" type="load" file="%_UBOOT%"   address="%_ADDR_UBOOT%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot image.</CMD>
+    <CMD state="BootStrap" type="load" file="%_ENV%"     address="%_ADDR_ENV%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot environment.</CMD>
+    <CMD state="BootStrap" type="load" file="%_DTB%"     address="%_ADDR_DTB%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading dtb.</CMD>
+
+    <CMD state="BootStrap" type="jump" > Boot... </CMD>
+
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="pipe nandwrite -p /dev/mtd2" file="%_KRNL%">Write kernel image</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="pipe nandwrite -p /dev/mtd5" file="%_LOGO%">Write logo bitmap</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    
+    <CMD state="Updater" type="push" body="$ ubiattach -m 3 -d 1 /dev/ubi_ctrl"/>
+    <CMD state="Updater" type="push" body="$ ubimkvol /dev/ubi1 -N rootfs -n 0 -s $((230 * 126976))"/>
+    <CMD state="Updater" type="push" body="$ mount -t ubifs ubi1:rootfs /mnt"/>
+    <CMD state="Updater" type="push" body="pipe tar -C /mnt -x%_ROOTFS_TAROPT%vf -" file="%_ROOTFS%">Write rootfs image</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="pipe tar -C /mnt -zxvf - lib/modules ./lib/modules" file="%_MODULES%">Write modules</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt"/>
+
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+
+  </LIST>
+
+  <LIST name="LINUX-MMC">
+
+    <CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+
+    <!--U-Boot update and environment setup: -->
+    <CMD state="BootStrap" type="boot" body="Recovery" file="%_MFGUBOOT%" >Loading mfg U-Boot.</CMD>
+
+    <CMD state="BootStrap" type="load" file="%_MFGENV%"  address="%_ADDR_MFGENV%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg U-Boot parameters.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGKRNL%" address="%_ADDR_MFGKRNL%" loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg Linux kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGDTB%"  address="%_ADDR_MFGDTB%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg dtb.</CMD>
+    <CMD state="BootStrap" type="load" file="%_RAMFS%"   address="%_ADDR_RAMFS%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading initramfs.</CMD>
+    <CMD state="BootStrap" type="load" file="%_UBOOT%"   address="%_ADDR_UBOOT%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot image.</CMD>
+    <CMD state="BootStrap" type="load" file="%_ENV%"     address="%_ADDR_ENV%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot environment.</CMD>
+
+    <CMD state="BootStrap" type="jump" > Boot... </CMD>
+
+    <CMD state="Updater" type="find" body="mmcblk0rpmb" timeout="30"/>
+    <CMD state="Updater" type="push" body="$ sleep 5"> Waiting 5s for eMMC...</CMD>
+    <CMD state="Updater" type="push" body="$ ln -s $(cd /dev;ls mmcblk*rpmb | sed s/rpmb//) /dev/emmc"> Select eMMC...</CMD>
+
+    <CMD state="Updater" type="push" body="pipe cat - > check-emmcmode.sh" file="../custom/check-emmcmode.sh">Checking PSLC mode</CMD>
+    <CMD state="Updater" type="push" body="pipe cat - > powerc" file="../custom/powerc"/>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="$ chmod +x check-emmcmode.sh powerc"/>
+    <CMD state="Updater" type="push" body="$ sh ./check-emmcmode.sh"/>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+
+    <CMD state="Updater" type="push" body="$ [ -b /dev/emmc ] && (echo label-id:0x0cc66cc0; echo start=8192,size=7725056,type=83; )  | sfdisk /dev/emmc"> Partitioning...</CMD>
+    <CMD state="Updater" type="push" body="$ [ -b /dev/$(readlink /dev/emmc)p1 ] && mkfs.ext4 -L OMROOT /dev/$(readlink /dev/emmc)p1">Format rootfs</CMD>
+
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/mmcblk0p1"/>
+    <CMD state="Updater" type="push" body="$ mount -t ext4 /dev/$(readlink /dev/emmc)p1 /mnt/mmcblk0p1"/>
+    <CMD state="Updater" type="push" body="pipe tar -x%_ROOTFS_TAROPT%v -C /mnt/mmcblk0p1" file="%_ROOTFS%">Sending and writing rootfs</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/mmcblk0p1"/>
+    <CMD state="Updater" type="push" body="$ rmdir /mnt/mmcblk0p1"/>
+
+    <CMD state="Updater" type="push" body="pipe cat - > format-external-sd.sh" file="../custom/format-external-sd.sh">Formating SD cards</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="$ chmod +x format-external-sd.sh"/>
+    <CMD state="Updater" type="push" body="$ sh ./format-external-sd.sh"/>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+
+  </LIST>
+
+  <LIST name="MMC-HIREL">
+
+    <CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+
+    <!--U-Boot update and environment setup: -->
+    <CMD state="BootStrap" type="boot" body="Recovery" file="%_MFGUBOOT%" >Loading mfg U-Boot.</CMD>
+
+    <CMD state="BootStrap" type="load" file="%_MFGENV%"  address="%_ADDR_MFGENV%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg U-Boot parameters.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGKRNL%" address="%_ADDR_MFGKRNL%" loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg Linux kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGDTB%"  address="%_ADDR_MFGDTB%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg dtb.</CMD>
+    <CMD state="BootStrap" type="load" file="%_RAMFS%"   address="%_ADDR_RAMFS%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading initramfs.</CMD>
+    <CMD state="BootStrap" type="load" file="%_UBOOT%"   address="%_ADDR_UBOOT%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot image.</CMD>
+    <CMD state="BootStrap" type="load" file="%_ENV%"     address="%_ADDR_ENV%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot environment.</CMD>
+    <CMD state="BootStrap" type="load" file="%_DTB%"     address="%_ADDR_DTB%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading dtb.</CMD>
+
+    <CMD state="BootStrap" type="jump" > Boot... </CMD>
+
+    <CMD state="Updater" type="push" body="$ ln -s $(cd /dev;ls mmcblk*rpmb | sed s/rpmb//) /dev/emmc"> Select eMMC...</CMD> 
+    <CMD state="Updater" type="push" body="$ [ $(mmc extcsd read /dev/emmc | sed '/PARTITION_SETTING_COMPLETED/!d;s/^.* //;s/[^0-9a-fx]*//gi') == 0x00 ]"> Check if partitioning is possible...</CMD> 
+    <CMD state="Updater" type="push" body="$ mmc enh_area set -y 0 $(( \
+                                                $(mmc extcsd read /dev/emmc | sed '/MAX_ENH_SIZE_MULT/!d;s/^.* //') \
+                                               *$(mmc extcsd read /dev/emmc | sed '/HC_WP_GRP_SIZE/!d;s/^.* //;s/[^0-9a-fx]*//gi') \
+                                               *$(mmc extcsd read /dev/emmc | sed '/HC_ERASE_GRP_SIZE/!d;s/^.* //;s/[^0-9a-fx]*//gi') \
+                                               *512 \
+                                              )) /dev/emmc | grep 'Device power cycle needed'"> Set enhanced eMMC area - power cycle needed...</CMD> 
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">DONE - POWER CYCLE NEEDED!</CMD>
+
+  </LIST>
+
+  <LIST name="WINDOWS-NAND">
+
+    <CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+
+    <!--U-Boot update and environment setup: -->
+    <CMD state="BootStrap" type="boot" body="Recovery" file="%_MFGUBOOT%" >Loading mfg U-Boot.</CMD>
+
+    <CMD state="BootStrap" type="load" file="%_MFGENV%"  address="%_ADDR_MFGENV%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg U-Boot parameters.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGKRNL%" address="%_ADDR_MFGKRNL%" loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg Linux kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGDTB%"  address="%_ADDR_MFGDTB%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg dtb.</CMD>
+    <CMD state="BootStrap" type="load" file="%_RAMFS%"   address="%_ADDR_RAMFS%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading initramfs.</CMD>
+    <CMD state="BootStrap" type="load" file="%_UBOOT%"   address="%_ADDR_UBOOT%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot image.</CMD>
+    <CMD state="BootStrap" type="load" file="%_ENV%"     address="%_ADDR_ENV%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot environment.</CMD>
+    <CMD state="BootStrap" type="load" file="%_DTB%"     address="%_ADDR_DTB%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading dtb.</CMD>
+
+    <CMD state="BootStrap" type="jump" > Boot... </CMD>
+
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="pipe nandwrite -p /dev/mtd3" file="%_NK%">Write NK</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="pipe nandwrite -p /dev/mtd4" file="%_LOGO%">Write logo bitmap</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+
+  </LIST>
+
+  <LIST name="WINDOWS-MMC">
+
+    <CMD state="BootStrap" type="find" body="Recovery" timeout="180"/>
+
+    <!--U-Boot update and environment setup: -->
+    <CMD state="BootStrap" type="boot" body="Recovery" file="%_MFGUBOOT%" >Loading mfg U-Boot.</CMD>
+
+    <CMD state="BootStrap" type="load" file="%_MFGENV%"  address="%_ADDR_MFGENV%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg U-Boot parameters.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGKRNL%" address="%_ADDR_MFGKRNL%" loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg Linux kernel.</CMD>
+    <CMD state="BootStrap" type="load" file="%_MFGDTB%"  address="%_ADDR_MFGDTB%"  loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading mfg dtb.</CMD>
+    <CMD state="BootStrap" type="load" file="%_RAMFS%"   address="%_ADDR_RAMFS%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading initramfs.</CMD>
+    <CMD state="BootStrap" type="load" file="%_UBOOT%"   address="%_ADDR_UBOOT%"   loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot image.</CMD>
+    <CMD state="BootStrap" type="load" file="%_ENV%"     address="%_ADDR_ENV%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading U-Boot environment.</CMD>
+    <CMD state="BootStrap" type="load" file="%_DTB%"     address="%_ADDR_DTB%"     loadSection="OTH" setSection="OTH" HasFlashHeader="FALSE" >Loading dtb.</CMD>
+
+    <CMD state="BootStrap" type="jump" > Boot... </CMD>
+
+    <CMD state="Updater" type="push" body="$ ln -s $(cd /dev;ls mmcblk*rpmb | sed s/rpmb//) /dev/emmc"> Select eMMC...</CMD> 
+    <CMD state="Updater" type="push" body="$ [ -b /dev/emmc ] && (echo label-id:0x0cc66cc0; echo size=325632,type=c; echo type=c) | sfdisk /dev/emmc"> Partitioning...</CMD> 
+    <CMD state="Updater" type="push" body="$ [ -b /dev/$(readlink /dev/emmc)p1 ] && mkfs.vfat /dev/$(readlink /dev/emmc)p1">Format Windows partition</CMD>
+    <CMD state="Updater" type="push" body="$ [ -b /dev/$(readlink /dev/emmc)p2 ] && mkfs.vfat /dev/$(readlink /dev/emmc)p2">Format user partition</CMD>
+
+    <CMD state="Updater" type="push" body="$ mkdir -p /mnt/emmcp1"/>
+    <CMD state="Updater" type="push" body="$ mount -t vfat /dev/$(readlink /dev/emmc)p1 /mnt/emmcp1"/>
+    <CMD state="Updater" type="push" body="pipe cat - > /mnt/emmcp1/nk" file="%_NK%">Write NK</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="pipe cat - > /mnt/emmcp1/logo.bmp" file="%_LOGO%">Write logo bitmap</CMD>
+    <CMD state="Updater" type="push" body="frf">flush the memory.</CMD>
+    <CMD state="Updater" type="push" body="$ umount /mnt/emmcp1"/>
+    <CMD state="Updater" type="push" body="$ rmdir /mnt/emmcp1"/>
+    
+    <CMD state="Updater" type="push" body="$ echo Update Complete!">Done</CMD>
+
+  </LIST>
+
+</UCL>

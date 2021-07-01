@@ -1,2 +1,7 @@
 /kernel
 /linux-*
+/mfgtx
+builder.conf
+/.vscode
+/__pycache__
+/archBin

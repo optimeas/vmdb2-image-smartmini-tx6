@@ -5,8 +5,16 @@ Instructions for configuration and use of hardware and software components can b
 
     sudo apt install bison flex bc lzop gcc-arm-linux-gnueabihf vmdb2 dosfstools qemu-user-static binfmt-support time kpartx bmap-tools
 
-### Flashing the image to the SD-card
+### Generating MfgTools
 
+To generate a MfgTool to flash a minimal Debian Single Root on either a SmartRail or an SmartMini execute the script:
+
+    ./buildall.py
+
+The generated compressed archives can be found under `output/build-<recent timestamp>/mfg/`
+
+### Flashing the image to the SD-card
+re
     lsblk
 
 => Find device file of YOUR sd-card device ...

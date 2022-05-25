@@ -113,7 +113,7 @@ steps:
       useradd --shell /bin/bash --create-home user 
       echo 'user:user' | chpasswd
 
-      install -d /home/user/.ssh
+      install -o user -g user -d /home/user/.ssh
       install -m 644 -o user -g user /root/.ssh/authorized_keys /home/user/.ssh/authorized_keys
 
       # add user to sudoers

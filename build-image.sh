@@ -53,6 +53,10 @@ fi
 
 if [ ! -d ${VMDB2_LATEST_DIR} ]; then 
     git clone git://git.liw.fi/vmdb2 ${VMDB2_LATEST_DIR}
+    cd ${VMDB2_LATEST_DIR}
+    git reset --hard f2c2863f 
+
+    cd ${VMDB2_DIR}
 fi
 
 if [ $OPT_INCREMENTAL_BUILD = 0 ]; then

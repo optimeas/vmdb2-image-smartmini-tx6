@@ -112,10 +112,12 @@ steps:
 
   - chroot: /
     shell: |
-      # delete root password
-      passwd -d root
+      # root config
+      echo "root:toor" | chpasswd
 
+      # user config
       useradd --shell /bin/bash --create-home user 
+      
       echo 'user:user' | chpasswd
 
       install -o user -g user -d /home/user/.ssh
@@ -127,6 +129,8 @@ steps:
       # edit user and root .bashrc to enable ll, la and l aliases
       sed -i 's/#\(alias l[la=]\)/\1/g' "/home/user/.bashrc"
       echo "alias l='ls -CF'\nalias la='ls -A'\nalias ll='ls -l'" >> /root/.bashrc 
+
+      chown user:user -R /home/user
 
       yes | apt full-upgrade
 

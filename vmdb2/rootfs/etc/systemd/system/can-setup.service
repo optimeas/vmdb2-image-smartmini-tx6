@@ -1,0 +1,13 @@
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description=CAN Transceiver Power On
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/can_init.sh
+
+[Install]
+WantedBy=multi-user.target

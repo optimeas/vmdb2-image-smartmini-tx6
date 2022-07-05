@@ -100,6 +100,11 @@ steps:
 
       # U-Boot
       install -m 644 -o root -g root rootfs/boot/u-boot.scr "${ROOT?}/boot/u-boot.scr"
+
+      # CAN Transceiver Service 
+      install -m 755 -o root -g root rootfs/sbin/can_init.sh "${ROOT?}/sbin/can_init.sh"
+      install -m 644 -o root -g root rootfs/etc/systemd/system/can-setup.service "${ROOT?}/etc/systemd/system/can-setup.service"
+      ln -s /etc/systemd/system/can-setup.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/can-setup.service"
       
       install -d ${ROOT?}/root/.ssh
       install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"

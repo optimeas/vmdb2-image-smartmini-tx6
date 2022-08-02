@@ -3,7 +3,7 @@
 # docker hub username
 USERNAME=optimeas
 # image name
-IMAGE=debian-build-armhf-native
+IMAGE=debian-build-armhf-emulated
 # version
 VERSION=bullseye
 

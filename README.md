@@ -46,7 +46,7 @@ These packages need to be installed and updated on your debian bullseye host in 
 tools in this repository:
 
     sudo apt install bison flex bc lzop gcc-arm-linux-gnueabihf vmdb2 dosfstools \
-    qemu-user-static binfmt-support time kpartx bmap-tools
+    qemu-user-static binfmt-support time kpartx bmap-tools u-boot-tools
 
 ### Generating MfgTools
 

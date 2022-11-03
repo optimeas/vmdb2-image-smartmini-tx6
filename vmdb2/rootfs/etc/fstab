@@ -1,1 +1,2 @@
 LABEL=OMROOT / ext4 errors=remount-ro 0 1
+LABEL=extdata /sde ext4 errors=continue 0 1

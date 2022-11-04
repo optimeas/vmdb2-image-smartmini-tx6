@@ -16,11 +16,18 @@ configuration for the devices for the ip address is:
 
     10.20.30.40/24
 
-You will need to configure your hosts ethernet interface, which has the Debian smartDevice 
-connected.
+Inital credentials of the image:
 
-After configuring you should be able to access the device via the above mentioned device 
-via ssh.
+General user account:
+	
+	username: user
+	password: user
+
+Credentials for superuser:
+	
+	password: toor
+
+You will need to configure your hosts ethernet interface, that is connected to your smartDevice. The should be configured with an address in the same subnet of the above mentioned address, in order to communicate with the device.
 
 ### Toolchain for C/C++ Development
 

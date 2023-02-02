@@ -61,6 +61,7 @@ steps:
     - usbutils
     - python3-libgpiod
     - haveged
+    - systemd-timesyncd
     tag: /
     unless: rootfs_unpacked
 

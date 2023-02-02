@@ -1,0 +1,13 @@
+# Copyright (C) 2021  optiMEAS GmbH. All rights reserved.
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description=Restore ownerships of /home directories
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/restore_home_ownerships.sh
+
+[Install]
+WantedBy=multi-user.target

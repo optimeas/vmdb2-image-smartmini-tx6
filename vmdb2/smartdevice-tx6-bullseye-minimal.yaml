@@ -107,6 +107,11 @@ steps:
       install -m 644 -o root -g root rootfs/etc/systemd/system/can-setup.service "${ROOT?}/etc/systemd/system/can-setup.service"
       ln -s /etc/systemd/system/can-setup.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/can-setup.service"
       
+      # home directory ownership restoration service
+      install -m 755 -o root -g root rootfs/usr/sbin/restore_home_ownerships.sh "${ROOT?}/sbin/restore_home_ownerships.sh"
+      install -m 644 -o root -g root rootfs/etc/systemd/system/home-ownership-restoration.service "${ROOT?}/etc/systemd/system/home-ownership-restoration.service"
+      ln -s /etc/systemd/system/home-ownership-restoration.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/home-ownership-restoration.service"
+
       install -d ${ROOT?}/root/.ssh
       install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"
     root-fs: /

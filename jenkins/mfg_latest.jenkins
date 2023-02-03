@@ -1,0 +1,33 @@
+pipeline {
+    def jenkinsRoot = 'jenkins/'
+
+    agent {
+        dockerfile {
+            filename $jenkinsRoot + 'build.Dockerfile'
+            dir $jenkinsRoot 
+            args '--privileged -v /var/gh_secrets:/var/gh_secrets'
+        }
+    }
+    
+    stages {
+        stage("Clean"){
+            steps{
+                sh 'rm -rf output/build*'
+                sh 'rm -rf builder.conf'
+            }
+        }
+
+        stage("Build"){
+            steps{
+                sh './buildall.py'
+            }
+        }
+
+        stage("Publish on Github"){
+            steps{
+                sh 'gh auth login --with-token < /var/gh_secrets/token'
+                sh 'gh release create -d -t "MFG Flash Tools Latest Builds" -F ${jenkinsRoot}/mfg_latest.notes output/ $(ls $(realpath output/*/mfg/*))'
+            }
+        }
+    }
+}

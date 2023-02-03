@@ -3,7 +3,8 @@
     "enabled" : true,
     "deviceTree" : [
         "imx6q-tx6qp-8037-smartrail-v1p0" ,
-        "imx6q-tx6qp-8037-smartrail-v2p0"
+        "imx6q-tx6qp-8037-smartrail-v2p0" ,
+        "imx6q-tx6qp-8037-smartrail-v2p1"
     ],
     "mfgBoard" : "TX6Q-8037",
     "mfgUCL" : "ucl2_rail.xml",

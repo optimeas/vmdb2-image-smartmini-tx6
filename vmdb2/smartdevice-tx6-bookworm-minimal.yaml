@@ -26,7 +26,7 @@ steps:
 
   - unpack-rootfs: /
 
-  - qemu-debootstrap: bullseye
+  - qemu-debootstrap: bookworm
     mirror: http://deb.debian.org/debian
     target: /
     arch: armhf
@@ -39,9 +39,9 @@ steps:
   - create-file: /etc/apt/sources.list
     trailing-newline: '1'
     contents: |
-      deb http://deb.debian.org/debian bullseye main contrib non-free
-      deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free
-      deb http://deb.debian.org/debian bullseye-updates main contrib non-free      
+      deb http://deb.debian.org/debian bookworm main contrib non-free
+      deb http://deb.debian.org/debian-security/ bookworm-security main contrib non-free
+      deb http://deb.debian.org/debian bookworm-updates main contrib non-free      
     unless: rootfs_unpacked
 
   - chroot: /

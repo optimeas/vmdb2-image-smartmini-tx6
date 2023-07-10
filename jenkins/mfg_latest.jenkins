@@ -1,15 +1,12 @@
 pipeline {
-    def jenkinsRoot = 'jenkins/'
-
     agent {
-        dockerfile {
-            filename $jenkinsRoot + 'build.Dockerfile'
-            dir $jenkinsRoot 
+        docker {
+            image 'optimeas/vmdb2-build'
             args '--privileged -v /var/gh_secrets:/var/gh_secrets'
         }
     }
     
-    stages {
+    stages {        
         stage("Clean"){
             steps{
                 sh 'rm -rf output/build*'
@@ -25,8 +22,8 @@ pipeline {
 
         stage("Publish on Github"){
             steps{
-                sh 'gh auth login --with-token < /var/gh_secrets/token'
-                sh 'gh release create -d -t "MFG Flash Tools Latest Builds" -F ${jenkinsRoot}/mfg_latest.notes output/ $(ls $(realpath output/*/mfg/*))'
+                sh 'gh auth login --with-token < /var/gh_secrets/jenkins_token'
+                sh 'gh release create -d -t "MFG Flash Tools Latest Builds" -F jenkins/mfg_latest.notes output/ $(ls $(realpath output/*/mfg/*))'
             }
         }
     }

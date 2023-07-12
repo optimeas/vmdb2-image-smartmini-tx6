@@ -24,6 +24,7 @@ pipeline {
             steps{
                 sh 'gh auth login --with-token < /var/gh_secrets/jenkins_token'
                 sh 'gh release delete --cleanup-tag latest || true'
+                sh 'git tag -d latest || true'
                 sh 'gh release create latest --latest -t "MFG Flash Tools Latest Builds" -F jenkins/mfg_latest.notes $(ls $(realpath output/*/mfg/*))'
             }
         }

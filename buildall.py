@@ -12,6 +12,7 @@ import shutil
 import urllib.request
 import tarfile
 import re
+from pathlib import Path
 
 
 class RootAlreadyBuilt(Exception):
@@ -85,15 +86,15 @@ def buildRootVmdb2(dir: str, buildCfg: dict) -> str:
     """call build-image.sh with dir as output directory and config["vmdb2Root"]
     as specifile
     """
-    buildRoot = os.path.join(dir, os.path.basename(buildCfg["vmdb2Root"]).split('.', 1)[0])
+    buildRoot = Path(dir) / os.path.basename(buildCfg["vmdb2Root"]).split('.', 1)[0]
 
-    workingDir = os.getcwd()
-    specifile = os.path.join(workingDir, "vmdb2", buildCfg["vmdb2Root"])
+    workingDir = Path.cwd()
+    specifile = workingDir / "vmdb2" / buildCfg["vmdb2Root"]
 
-    if not os.path.isfile(specifile):
+    if not specifile.is_file():
         raise SpeciNotFound
 
-    if not os.path.isdir(buildRoot):
+    if not buildRoot.is_dir():
         os.mkdir(buildRoot)
 
         cmd = ['sudo', './build-image.sh', '-f', specifile, '-d', buildRoot]
@@ -192,9 +193,9 @@ def buildMFGTool(mfgRoot: str, buildCfg: dict, appCfg: dict) -> os.PathLike[str]
     buildCfg and appCfg
     """
     basename = buildCfg["mach"] + '-' + buildCfg["deviceTree"].split('-')[-1]
-    mfgDir = os.path.join(mfgRoot, basename)
+    mfgDir = Path(mfgRoot) / basename
 
-    mfgSrcDir = os.path.join(os.getcwd(), "scripts", "mfgsrc")
+    mfgSrcDir = Path.cwd() / "scripts" / "mfgsrc"
 
     # copy mfgtx binary template into mfg build tree
     shutil.copytree(os.path.join(os.getcwd(), "mfgtx"), mfgDir)
@@ -269,7 +270,7 @@ def main():
 
             uncompressed_mfgDir = buildMFGTool(mfgRoot, con, cfg.appCfg)   
 
-            target = uncompressed_mfgDir + ".tgz"
+            target = uncompressed_mfgDir.with_suffix('.tgz')
             tarDir(uncompressed_mfgDir, target)
             shutil.rmtree(uncompressed_mfgDir)
 

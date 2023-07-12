@@ -1,0 +1,31 @@
+pipeline {
+    agent {
+        docker {
+            image 'optimeas/vmdb2-build'
+            args '--privileged -v /var/gh_secrets:/var/gh_secrets'
+        }
+    }
+    
+    stages {        
+        stage("Clean"){
+            steps{
+                sh 'rm -rf output/build*'
+                sh 'rm -rf builder.conf'
+            }
+        }
+
+        stage("Build"){
+            steps{
+                sh './buildall.py'
+            }
+        }
+
+        stage("Publish on Github"){
+            steps{
+                sh 'gh auth login --with-token < /var/gh_secrets/jenkins_token'
+                sh 'gh release delete --cleanup-tag latest || true'
+                sh 'gh release create latest --latest -t "MFG Flash Tools Latest Builds" -F jenkins/mfg_latest.notes $(ls $(realpath output/*/mfg/*))'
+            }
+        }
+    }
+}

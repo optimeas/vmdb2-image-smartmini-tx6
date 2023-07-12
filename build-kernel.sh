@@ -16,20 +16,20 @@ set -ex
 
 if [ ! -d "$KERNEL_DIR" ]; then
 	echo "prepare kernel directory"
-    git clone https://github.com/optimeas/linux-tx6-5.10.git ${KERNEL_DIR}
+    git clone https://github.com/optimeas/linux-tx6-5.10.git "${KERNEL_DIR}"
 #    git clone git@github.com:optimeas/linux-tx6-5.10.git ${KERNEL_DIR}
 
-    mkdir -p ${KERNEL_DIR}/imx/sdma
-    cp -v sdma-imx6q.bin ${KERNEL_DIR}/imx/sdma/
-    cp -v ${MYDIR}/kernel-config ${KERNEL_DIR}/.config
+    mkdir -p "${KERNEL_DIR}/imx/sdma"
+    cp -v sdma-imx6q.bin "${KERNEL_DIR}/imx/sdma/"
+    cp -v "${MYDIR}/kernel-config" "${KERNEL_DIR}/.config"
     
-    cd ${KERNEL_DIR}
+    cd "${KERNEL_DIR}"
     make ARCH=arm CROSS_COMPILE="${KERNEL_CROSS_COMPILE}" LD="${KERNEL_LD}" olddefconfig
 
-    cd ${MYDIR}
+    cd "${MYDIR}"
 fi
 
-cd ${KERNEL_DIR}
+cd "${KERNEL_DIR}"
 
 #TODO: add a command line option "-c" to clean the tree with "make mrproper"
 
@@ -39,6 +39,6 @@ cd ${KERNEL_DIR}
 
 make ARCH=arm CROSS_COMPILE="${KERNEL_CROSS_COMPILE}" LD="${KERNEL_LD}" bindeb-pkg
 
-rm -f ${MYDIR}/${DEB_DIR}/linux-image-*.deb
-cp -v ../linux-image-*.deb ${MYDIR}/${DEB_DIR}/linux-image-tx6-latest.deb
+rm -f "${MYDIR}/${DEB_DIR}/linux-image-*.deb"
+cp -v ../linux-image-*.deb "${MYDIR}/${DEB_DIR}/linux-image-tx6-latest.deb"
 

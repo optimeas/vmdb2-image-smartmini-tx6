@@ -26,7 +26,7 @@ steps:
 
   - unpack-rootfs: /
 
-  - qemu-debootstrap: bullseye
+  - qemu-debootstrap: bookworm
     mirror: http://deb.debian.org/debian
     target: /
     arch: armhf
@@ -39,9 +39,9 @@ steps:
   - create-file: /etc/apt/sources.list
     trailing-newline: '1'
     contents: |
-      deb http://deb.debian.org/debian bullseye main contrib non-free
-      deb http://deb.debian.org/debian-security/ bullseye-security main contrib non-free
-      deb http://deb.debian.org/debian bullseye-updates main contrib non-free      
+      deb http://deb.debian.org/debian bookworm main contrib non-free
+      deb http://deb.debian.org/debian-security/ bookworm-security main contrib non-free
+      deb http://deb.debian.org/debian bookworm-updates main contrib non-free      
     unless: rootfs_unpacked
 
   - chroot: /
@@ -91,7 +91,7 @@ steps:
       ln -s /etc/systemd/system/generate-ssh-host-keys.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/generate-ssh-host-keys.service"
       
       # NetworkManager connections setup
-      install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-eth0.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-eth0.nmconnection"
+      install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-end0.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-end0.nmconnection"
       install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-modem.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-modem.nmconnection"
 
       # Overlay init setup
@@ -111,6 +111,9 @@ steps:
       install -m 755 -o root -g root rootfs/usr/sbin/restore_home_ownerships.sh "${ROOT?}/sbin/restore_home_ownerships.sh"
       install -m 644 -o root -g root rootfs/etc/systemd/system/home-ownership-restoration.service "${ROOT?}/etc/systemd/system/home-ownership-restoration.service"
       ln -s /etc/systemd/system/home-ownership-restoration.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/home-ownership-restoration.service"
+
+      # Mask binfmt service, because no binfmt kernel module is loaded on default (service will be enabled in bookworm on every new installation)
+      ln -s /dev/null "${ROOT?}/etc/systemd/system/systemd-binfmt.service"
 
       install -d ${ROOT?}/root/.ssh
       install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"

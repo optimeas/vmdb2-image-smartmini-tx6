@@ -32,6 +32,12 @@ default_config = {
 }
 
 
+def image_identifier(buildCfg: dict)-> str:
+    filename = buildCfg['vmdb2Root']
+    name = filename.split('.')[0]
+    name = '-'.join(filename.split('-')[-2:])
+    return name
+
 class ConfigProvider:
     def __init__(self, cfgPath: str) -> None:
         if not os.path.exists(cfgPath):
@@ -192,7 +198,7 @@ def buildMFGTool(mfgRoot: str, buildCfg: dict, appCfg: dict) -> os.PathLike[str]
     """build a MFGtool directory inside mfgRoot following the configuration inside
     buildCfg and appCfg
     """
-    basename = buildCfg["mach"] + '-' + buildCfg["deviceTree"].split('-')[-1]
+    basename = buildCfg["mach"] + '-' + buildCfg["deviceTree"].split('-')[-1] + '-' + image_identifier(buildCfg)
     mfgDir = Path(mfgRoot) / basename
 
     mfgSrcDir = Path.cwd() / "scripts" / "mfgsrc"

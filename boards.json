@@ -1,5 +1,5 @@
 [{
-    "mach" : "smartrail-minimal",
+    "mach" : "smartrail",
     "enabled" : true,
     "deviceTree" : [
         "imx6q-tx6qp-8037-smartrail-v1p0" ,
@@ -10,19 +10,19 @@
     "mfgUCL" : "ucl2_rail.xml",
     "mfgProfile" : "TX6",
     "mfgDtb" : "imx6q-tx6q-1036.dtb",
-    "vmdb2Root" : "smartdevice-tx6-bullseye-minimal.yaml",
+    "vmdb2Root" : "smartdevice-tx6-bookworm-minimal.yaml",
     "videoMode" : "ET070001DM6"
 },
 
 {
-    "mach" : "smartmini-minimal",
+    "mach" : "smartmini",
     "enabled" : true,
     "deviceTree" : "imx6dl-tx6s-8035-smartmini-v2p3",
     "mfgBoard" : "TX6S-8035",
     "mfgUCL" : "ucl2.xml",
     "mfgProfile" : "TX6",
     "mfgDtb" : "imx6dl-tx6s-8035.dtb",
-    "vmdb2Root" : "smartdevice-tx6-bullseye-minimal.yaml",
+    "vmdb2Root" : "smartdevice-tx6-bookworm-minimal.yaml",
     "videoMode" : "ET070001DM6"
 }
 ]

@@ -91,7 +91,7 @@ steps:
       ln -s /etc/systemd/system/generate-ssh-host-keys.service "${ROOT?}/etc/systemd/system/multi-user.target.wants/generate-ssh-host-keys.service"
       
       # NetworkManager connections setup
-      install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-eth0.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-eth0.nmconnection"
+      install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-end0.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-end0.nmconnection"
       install -m 600 -o root -g root rootfs/etc/NetworkManager/system-connections/con-modem.nmconnection "${ROOT?}/etc/NetworkManager/system-connections/con-modem.nmconnection"
 
       # Overlay init setup

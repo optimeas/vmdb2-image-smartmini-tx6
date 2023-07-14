@@ -14,6 +14,8 @@ KERNEL_LD="arm-linux-gnueabihf-ld.bfd"
 
 set -ex
 
+rm "${MYDIR}/linux*5.10*"  || true
+
 if [ ! -d "$KERNEL_DIR" ]; then
 	echo "prepare kernel directory"
     git clone https://github.com/optimeas/linux-tx6-5.10.git "${KERNEL_DIR}"

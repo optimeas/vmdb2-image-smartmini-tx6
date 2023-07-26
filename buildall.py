@@ -35,7 +35,7 @@ default_config = {
 def image_identifier(buildCfg: dict)-> str:
     filename = buildCfg['vmdb2Root']
     name = filename.split('.')[0]
-    name = '-'.join(filename.split('-')[-2:])
+    name = '-'.join(name.split('-')[-2:])
     return name
 
 class ConfigProvider:

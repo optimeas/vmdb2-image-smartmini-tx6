@@ -115,8 +115,6 @@ steps:
       # Mask binfmt service, because no binfmt kernel module is loaded on default (service will be enabled in bookworm on every new installation)
       ln -s /dev/null "${ROOT?}/etc/systemd/system/systemd-binfmt.service"
 
-      install -d ${ROOT?}/root/.ssh
-      install -m 644 -o root -g root rootfs/ssh/omservice.pub "${ROOT?}/root/.ssh/authorized_keys"
     root-fs: /
 
   - chroot: /
